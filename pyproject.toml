@@ -1,0 +1,49 @@
+[project]
+name = "prior-auth-gateway"
+version = "0.1.0"
+description = "A durable synthetic prior authorization integration gateway"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+  "fastapi>=0.115,<1", "uvicorn>=0.34,<1", "psycopg[binary]>=3.2,<4",
+  "httpx>=0.28,<1", "PyJWT[crypto]>=2.10,<3", "pydantic-settings>=2.8,<3",
+  "jsonschema>=4.23,<5", "boto3>=1.37,<2", "prometheus-client>=0.21,<1",
+  "opentelemetry-api>=1.30,<2", "opentelemetry-sdk>=1.30,<2",
+  "opentelemetry-exporter-otlp-proto-http>=1.30,<2",
+  "cryptography>=50,<51",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.3,<10", "pytest-cov>=6,<8", "ruff>=0.11,<1", "mypy>=1.15,<2", "types-jsonschema", "types-requests", "hypothesis>=6.130,<7", "pip-audit>=2.9,<3", "defusedxml>=0.7,<1"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pagw"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+ignore = ["E501", "S101", "S104", "S311"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S105", "S106"]
+"scripts/*" = ["S603", "S607"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "scope"]
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+python_version = "3.12"
+check_untyped_defs = true
+ignore_missing_imports = true
+files = ["src/pagw"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
