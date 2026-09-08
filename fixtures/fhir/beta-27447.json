@@ -1,0 +1,151 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "fullUrl": "https://synthetic.example/fhir/Claim/claim",
+      "resource": {
+        "resourceType": "Claim",
+        "id": "claim",
+        "identifier": [
+          {
+            "system": "urn:example:claim",
+            "value": "fixture-beta-27447"
+          }
+        ],
+        "status": "active",
+        "type": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/claim-type",
+              "code": "professional"
+            }
+          ]
+        },
+        "use": "preauthorization",
+        "patient": {
+          "reference": "Patient/patient-synthetic"
+        },
+        "created": "2026-10-20",
+        "insurer": {
+          "reference": "Organization/payer"
+        },
+        "provider": {
+          "reference": "Organization/provider"
+        },
+        "priority": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/processpriority",
+              "code": "normal"
+            }
+          ]
+        },
+        "insurance": [
+          {
+            "sequence": 1,
+            "focal": true,
+            "coverage": {
+              "reference": "Coverage/coverage"
+            }
+          }
+        ],
+        "diagnosis": [
+          {
+            "sequence": 1,
+            "diagnosisCodeableConcept": {
+              "coding": [
+                {
+                  "system": "http://hl7.org/fhir/sid/icd-10-cm",
+                  "code": "M25.561"
+                }
+              ]
+            }
+          }
+        ],
+        "item": [
+          {
+            "sequence": 1,
+            "productOrService": {
+              "coding": [
+                {
+                  "system": "http://www.ama-assn.org/go/cpt",
+                  "code": "27447"
+                }
+              ]
+            },
+            "quantity": {
+              "value": 1
+            },
+            "servicedDate": "2027-01-15",
+            "diagnosisSequence": [
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://synthetic.example/fhir/Patient/patient-synthetic",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "patient-synthetic",
+        "identifier": [
+          {
+            "system": "urn:example:synthetic",
+            "value": "FAKE-001"
+          }
+        ],
+        "name": [
+          {
+            "family": "Synthetic",
+            "given": [
+              "Demo"
+            ]
+          }
+        ],
+        "birthDate": "1980-01-01",
+        "gender": "unknown"
+      }
+    },
+    {
+      "fullUrl": "https://synthetic.example/fhir/Coverage/coverage",
+      "resource": {
+        "resourceType": "Coverage",
+        "id": "coverage",
+        "status": "active",
+        "beneficiary": {
+          "reference": "Patient/patient-synthetic"
+        },
+        "payor": [
+          {
+            "reference": "Organization/payer"
+          }
+        ],
+        "subscriberId": "FAKE-MEMBER"
+      }
+    },
+    {
+      "fullUrl": "https://synthetic.example/fhir/Organization/payer",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "payer",
+        "identifier": [
+          {
+            "system": "urn:example:payer-id",
+            "value": "beta"
+          }
+        ],
+        "name": "Synthetic beta"
+      }
+    },
+    {
+      "fullUrl": "https://synthetic.example/fhir/Organization/provider",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "provider",
+        "name": "Synthetic Clinic"
+      }
+    }
+  ]
+}
