@@ -1,0 +1,114 @@
+name: pagw
+x-gateway: &gateway
+  build: .
+  image: pagw:local
+  env_file: .env
+  environment: &environment
+    PAGW_DATABASE_URL: postgresql://pagw:local-only@postgres:5432/pagw
+    PAGW_ISSUER: http://idp:8081
+    PAGW_JWKS_URL: http://idp:8081/.well-known/jwks.json
+    PAGW_PAYER_BASE_URL: http://payers:8082
+    PAGW_CALLBACK_BASE_URL: http://api:8080
+    PAGW_RECEIVER_URL: http://receiver:8083/events
+    PAGW_IDP_KEY_PATH: /keys/idp.pem
+    PAGW_CLIENT_KEY_PATH: /keys/client.pem
+    PAGW_RECEIVER_DB_PATH: /data/receiver.sqlite
+  volumes:
+    - demo_keys:/keys:ro
+  read_only: true
+  tmpfs: [/tmp]
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  restart: unless-stopped
+  depends_on:
+    postgres: {condition: service_healthy}
+    key-init: {condition: service_completed_successfully}
+x-running-gateway: &running-gateway
+  <<: *gateway
+  depends_on:
+    migrate: {condition: service_completed_successfully}
+services:
+  key-init:
+    build: .
+    image: pagw:local
+    user: root
+    entrypoint: [python, -c]
+    command:
+      - "import pathlib,shutil,os; [(shutil.copyfile('/source/'+n,'/keys/'+n),os.chown('/keys/'+n,10001,10001),os.chmod('/keys/'+n,0o400)) for n in ['idp.pem','client.pem']]; os.chown('/data',10001,10001)"
+    volumes:
+      - ./.runtime:/source:ro
+      - demo_keys:/keys
+      - receiverdata:/data
+    restart: "no"
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: pagw
+      POSTGRES_PASSWORD: local-only
+      POSTGRES_DB: pagw
+    ports: ["127.0.0.1:55480:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U pagw -d pagw"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+  migrate:
+    <<: *gateway
+    command: [migrate]
+    restart: "no"
+  api:
+    <<: *running-gateway
+    command: [api, --host, 0.0.0.0, --port, "8080"]
+    ports: ["127.0.0.1:8180:8080"]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/readyz', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  idp:
+    <<: *running-gateway
+    command: [idp, --host, 0.0.0.0, --port, "8081"]
+  payers:
+    <<: *running-gateway
+    command: [payers, --host, 0.0.0.0, --port, "8082"]
+  receiver:
+    <<: *running-gateway
+    command: [receiver, --host, 0.0.0.0, --port, "8083"]
+    volumes: [receiverdata:/data]
+  relay:
+    <<: *running-gateway
+    command: [relay]
+  worker:
+    <<: *running-gateway
+    command: [worker, --queue, submit]
+  webhook-worker:
+    <<: *running-gateway
+    command: [worker, --queue, webhook]
+  scheduler:
+    <<: *running-gateway
+    command: [scheduler]
+  callbacks:
+    <<: *running-gateway
+    command: [callbacks]
+  localstack:
+    profiles: [sqs]
+    image: localstack/localstack:4.0.3
+    environment:
+      SERVICES: sqs
+      AWS_DEFAULT_REGION: us-west-2
+      SQS_ENDPOINT_STRATEGY: path
+      LOCALSTACK_HOST: 127.0.0.1:45679
+    ports: ["127.0.0.1:45679:4566"]
+    healthcheck:
+      test: [CMD, python, -c, "import json,urllib.request; assert json.load(urllib.request.urlopen('http://127.0.0.1:4566/_localstack/health'))['services']['sqs'] in ('available','running')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+volumes:
+  pgdata:
+  receiverdata:
+  demo_keys:

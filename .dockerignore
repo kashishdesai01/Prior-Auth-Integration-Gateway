@@ -1,0 +1,9 @@
+.git
+.venv
+.env
+.runtime
+artifacts
+tests
+docs
+infra
+__pycache__
