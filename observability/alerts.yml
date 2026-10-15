@@ -1,0 +1,15 @@
+groups:
+  - name: pagw-durable-work
+    rules:
+      - alert: PriorAuthOperationsOverdue
+        expr: pagw_due_operation_lag_seconds > 30
+        for: 2m
+        labels: {severity: warning}
+        annotations:
+          summary: Durable gateway work is not progressing
+      - alert: PriorAuthOperationsNeedReview
+        expr: sum(pagw_durable_operations{state="DEAD"}) > 0
+        for: 1m
+        labels: {severity: warning}
+        annotations:
+          summary: Inspect exhausted operations before explicit recovery
